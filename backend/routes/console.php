@@ -20,3 +20,18 @@ Schedule::command('challenges:send-daily')
 Schedule::call(function () {
     app(\App\Application\Services\RAGService::class)->processPendingEmbeddings(100);
 })->hourly();
+
+// Smart reminders - check every 15 minutes
+Schedule::command('reminders:send')
+    ->everyFifteenMinutes()
+    ->timezone('America/Argentina/Buenos_Aires');
+
+// Spaced repetition reminders at 9 AM
+Schedule::command('sr:send-reminders')
+    ->dailyAt('09:00')
+    ->timezone('America/Argentina/Buenos_Aires');
+
+// Inactivity detection at 10 AM
+Schedule::call(function () {
+    app(\App\Application\Services\InactivityDetectorService::class)->detectAndNotify(3);
+})->dailyAt('10:00')->timezone('America/Argentina/Buenos_Aires');
