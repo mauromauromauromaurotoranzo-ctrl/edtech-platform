@@ -1,60 +1,58 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entities;
 
 use DateTimeImmutable;
 
 class Conversation
 {
-    private string $id;
-    private string $studentId;
-    private string $knowledgeBaseId;
-    private array $messages;
-    private array $contextRetrieval;
-    private ?float $engagementScore;
-    private DateTimeImmutable $createdAt;
-    private ?DateTimeImmutable $lastMessageAt;
-
+    /**
+     * @param array<int, Message> $messages
+     * @param string[] $chunksReferenced
+     */
     public function __construct(
-        string $id,
-        string $studentId,
-        string $knowledgeBaseId,
-        ?DateTimeImmutable $createdAt = null
-    ) {
-        $this->id = $id;
-        $this->studentId = $studentId;
-        $this->knowledgeBaseId = $knowledgeBaseId;
-        $this->messages = [];
-        $this->contextRetrieval = [];
-        $this->engagementScore = null;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->lastMessageAt = null;
+        private ?int $id,
+        private int $studentId,
+        private int $knowledgeBaseId,
+        private array $messages,
+        private array $chunksReferenced,
+        private ?float $engagementScore,
+        private DateTimeImmutable $createdAt,
+        private DateTimeImmutable $updatedAt,
+    ) {}
+
+    public static function create(
+        int $studentId,
+        int $knowledgeBaseId,
+    ): self {
+        $now = new DateTimeImmutable();
+        return new self(
+            id: null,
+            studentId: $studentId,
+            knowledgeBaseId: $knowledgeBaseId,
+            messages: [],
+            chunksReferenced: [],
+            engagementScore: null,
+            createdAt: $now,
+            updatedAt: $now,
+        );
     }
 
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getStudentId(): string
+    public function getStudentId(): int
     {
         return $this->studentId;
     }
 
-    public function getKnowledgeBaseId(): string
+    public function getKnowledgeBaseId(): int
     {
         return $this->knowledgeBaseId;
-    }
-
-    public function addMessage(string $role, string $content, ?int $tokensUsed = null): void
-    {
-        $this->messages[] = [
-            'role' => $role,
-            'content' => $content,
-            'tokens_used' => $tokensUsed,
-            'timestamp' => (new DateTimeImmutable())->format('Y-m-d H:i:s'),
-        ];
-        $this->lastMessageAt = new DateTimeImmutable();
     }
 
     public function getMessages(): array
@@ -62,19 +60,9 @@ class Conversation
         return $this->messages;
     }
 
-    public function setContextRetrieval(array $chunksReferenced): void
+    public function getChunksReferenced(): array
     {
-        $this->contextRetrieval = $chunksReferenced;
-    }
-
-    public function getContextRetrieval(): array
-    {
-        return $this->contextRetrieval;
-    }
-
-    public function setEngagementScore(float $score): void
-    {
-        $this->engagementScore = $score;
+        return $this->chunksReferenced;
     }
 
     public function getEngagementScore(): ?float
@@ -87,13 +75,35 @@ class Conversation
         return $this->createdAt;
     }
 
-    public function getLastMessageAt(): ?DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
-        return $this->lastMessageAt;
+        return $this->updatedAt;
     }
 
-    public function getLastMessages(int $count = 10): array
+    public function addMessage(Message $message): void
     {
-        return array_slice($this->messages, -$count);
+        $this->messages[] = $message;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function addChunkReference(string $chunkId): void
+    {
+        if (!in_array($chunkId, $this->chunksReferenced, true)) {
+            $this->chunksReferenced[] = $chunkId;
+        }
+    }
+
+    public function setEngagementScore(float $score): void
+    {
+        $this->engagementScore = $score;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function getLastMessage(): ?Message
+    {
+        if (empty($this->messages)) {
+            return null;
+        }
+        return $this->messages[count($this->messages) - 1];
     }
 }

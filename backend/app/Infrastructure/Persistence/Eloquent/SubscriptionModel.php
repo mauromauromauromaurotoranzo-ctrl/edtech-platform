@@ -1,57 +1,49 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Persistence\Eloquent;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SubscriptionModel extends Model
 {
+    use HasFactory;
+
     protected $table = 'subscriptions';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
         'student_id',
         'knowledge_base_id',
+        'course_id',
         'status',
-        'amount',
-        'currency',
-        'interval',
         'current_period_starts_at',
         'current_period_ends_at',
-        'payment_provider_subscription_id',
-        'cancelled_at',
+        'payment_provider_data',
     ];
 
     protected $casts = [
-        'amount' => 'integer',
         'current_period_starts_at' => 'datetime',
         'current_period_ends_at' => 'datetime',
-        'cancelled_at' => 'datetime',
+        'payment_provider_data' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    public function student()
+    public function student(): BelongsTo
     {
         return $this->belongsTo(StudentModel::class, 'student_id');
     }
 
-    public function knowledgeBase()
+    public function knowledgeBase(): BelongsTo
     {
         return $this->belongsTo(KnowledgeBaseModel::class, 'knowledge_base_id');
     }
 
-    public function scopeActive($query)
+    public function course(): BelongsTo
     {
-        return $query->where('status', 'active');
-    }
-
-    public function scopeExpiringSoon($query, $days = 7)
-    {
-        return $query->where('current_period_ends_at', '<=', now()->addDays($days))
-                     ->where('status', 'active');
+        return $this->belongsTo(CourseModel::class, 'course_id');
     }
 }

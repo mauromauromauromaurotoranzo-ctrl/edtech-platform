@@ -1,108 +1,80 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entities;
 
 use DateTimeImmutable;
-use App\Domain\ValueObjects\Money;
 
 class Subscription
 {
-    public const STATUS_ACTIVE = 'active';
-    public const STATUS_CANCELLED = 'cancelled';
-    public const STATUS_EXPIRED = 'expired';
-    public const STATUS_PENDING = 'pending';
-
-    private string $id;
-    private string $studentId;
-    private string $knowledgeBaseId;
-    private string $status;
-    private Money $amount;
-    private string $interval;
-    private DateTimeImmutable $currentPeriodStartsAt;
-    private DateTimeImmutable $currentPeriodEndsAt;
-    private ?string $paymentProviderSubscriptionId;
-    private DateTimeImmutable $createdAt;
-    private ?DateTimeImmutable $cancelledAt;
-
     public function __construct(
-        string $id,
-        string $studentId,
-        string $knowledgeBaseId,
-        Money $amount,
-        string $interval = 'month',
-        ?DateTimeImmutable $currentPeriodStartsAt = null,
-        ?DateTimeImmutable $currentPeriodEndsAt = null,
-        ?string $paymentProviderSubscriptionId = null,
-        ?DateTimeImmutable $createdAt = null
+        private ?int $id,
+        private int $studentId,
+        private ?int $knowledgeBaseId,
+        private ?int $courseId,
+        private SubscriptionStatus $status,
+        private DateTimeImmutable $currentPeriodStartsAt,
+        private DateTimeImmutable $currentPeriodEndsAt,
+        private ?array $paymentProviderData,
+        private DateTimeImmutable $createdAt,
+        private DateTimeImmutable $updatedAt,
     ) {
-        $this->id = $id;
-        $this->studentId = $studentId;
-        $this->knowledgeBaseId = $knowledgeBaseId;
-        $this->status = self::STATUS_PENDING;
-        $this->amount = $amount;
-        $this->interval = $interval;
-        $this->currentPeriodStartsAt = $currentPeriodStartsAt ?? new DateTimeImmutable();
-        $this->currentPeriodEndsAt = $currentPeriodEndsAt ?? (new DateTimeImmutable())->modify('+1 month');
-        $this->paymentProviderSubscriptionId = $paymentProviderSubscriptionId;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->cancelledAt = null;
+        if ($knowledgeBaseId === null && $courseId === null) {
+            throw new \InvalidArgumentException('Subscription must have either knowledgeBaseId or courseId');
+        }
     }
 
-    public function getId(): string
+    public static function create(
+        int $studentId,
+        ?int $knowledgeBaseId,
+        ?int $courseId,
+        DateTimeImmutable $currentPeriodEndsAt,
+        ?array $paymentProviderData = null,
+    ): self {
+        $now = new DateTimeImmutable();
+        return new self(
+            id: null,
+            studentId: $studentId,
+            knowledgeBaseId: $knowledgeBaseId,
+            courseId: $courseId,
+            status: SubscriptionStatus::ACTIVE,
+            currentPeriodStartsAt: $now,
+            currentPeriodEndsAt: $currentPeriodEndsAt,
+            paymentProviderData: $paymentProviderData,
+            createdAt: $now,
+            updatedAt: $now,
+        );
+    }
+
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getStudentId(): string
+    public function getStudentId(): int
     {
         return $this->studentId;
     }
 
-    public function getKnowledgeBaseId(): string
+    public function getKnowledgeBaseId(): ?int
     {
         return $this->knowledgeBaseId;
     }
 
-    public function getStatus(): string
+    public function getCourseId(): ?int
+    {
+        return $this->courseId;
+    }
+
+    public function getStatus(): SubscriptionStatus
     {
         return $this->status;
     }
 
-    public function activate(): void
+    public function getCurrentPeriodStartsAt(): DateTimeImmutable
     {
-        $this->status = self::STATUS_ACTIVE;
-    }
-
-    public function cancel(): void
-    {
-        $this->status = self::STATUS_CANCELLED;
-        $this->cancelledAt = new DateTimeImmutable();
-    }
-
-    public function expire(): void
-    {
-        $this->status = self::STATUS_EXPIRED;
-    }
-
-    public function renew(DateTimeImmutable $newPeriodEnd): void
-    {
-        $this->currentPeriodStartsAt = $this->currentPeriodEndsAt;
-        $this->currentPeriodEndsAt = $newPeriodEnd;
-    }
-
-    public function isActive(): bool
-    {
-        return $this->status === self::STATUS_ACTIVE;
-    }
-
-    public function getAmount(): Money
-    {
-        return $this->amount;
-    }
-
-    public function getInterval(): string
-    {
-        return $this->interval;
+        return $this->currentPeriodStartsAt;
     }
 
     public function getCurrentPeriodEndsAt(): DateTimeImmutable
@@ -110,19 +82,9 @@ class Subscription
         return $this->currentPeriodEndsAt;
     }
 
-    public function isExpired(): bool
+    public function getPaymentProviderData(): ?array
     {
-        return $this->currentPeriodEndsAt < new DateTimeImmutable();
-    }
-
-    public function getPaymentProviderSubscriptionId(): ?string
-    {
-        return $this->paymentProviderSubscriptionId;
-    }
-
-    public function setPaymentProviderSubscriptionId(string $id): void
-    {
-        $this->paymentProviderSubscriptionId = $id;
+        return $this->paymentProviderData;
     }
 
     public function getCreatedAt(): DateTimeImmutable
@@ -130,8 +92,34 @@ class Subscription
         return $this->createdAt;
     }
 
-    public function getCancelledAt(): ?DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
-        return $this->cancelledAt;
+        return $this->updatedAt;
+    }
+
+    public function cancel(): void
+    {
+        $this->status = SubscriptionStatus::CANCELLED;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function expire(): void
+    {
+        $this->status = SubscriptionStatus::EXPIRED;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function renew(DateTimeImmutable $newPeriodEndsAt): void
+    {
+        $this->currentPeriodStartsAt = new DateTimeImmutable();
+        $this->currentPeriodEndsAt = $newPeriodEndsAt;
+        $this->status = SubscriptionStatus::ACTIVE;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === SubscriptionStatus::ACTIVE 
+            && $this->currentPeriodEndsAt > new DateTimeImmutable();
     }
 }

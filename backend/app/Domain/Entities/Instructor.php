@@ -1,62 +1,50 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entities;
 
 use DateTimeImmutable;
-use App\Domain\ValueObjects\Email;
 
 class Instructor
 {
-    private string $id;
-    private string $userId;
-    private Email $email;
-    private string $name;
-    private array $expertiseAreas;
-    private ?string $voiceCloneId;
-    private string $bio;
-    private bool $isVerified;
-    private DateTimeImmutable $createdAt;
-
+    /**
+     * @param string[] $expertiseAreas
+     */
     public function __construct(
-        string $id,
-        string $userId,
-        Email $email,
-        string $name,
+        private ?int $id,
+        private int $userId,
+        private array $expertiseAreas,
+        private VerificationStatus $verificationStatus,
+        private ?string $stripeAccountId,
+        private DateTimeImmutable $createdAt,
+        private DateTimeImmutable $updatedAt,
+    ) {}
+
+    public static function create(
+        int $userId,
         array $expertiseAreas = [],
-        ?string $voiceCloneId = null,
-        string $bio = '',
-        bool $isVerified = false,
-        ?DateTimeImmutable $createdAt = null
-    ) {
-        $this->id = $id;
-        $this->userId = $userId;
-        $this->email = $email;
-        $this->name = $name;
-        $this->expertiseAreas = $expertiseAreas;
-        $this->voiceCloneId = $voiceCloneId;
-        $this->bio = $bio;
-        $this->isVerified = $isVerified;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
+    ): self {
+        $now = new DateTimeImmutable();
+        return new self(
+            id: null,
+            userId: $userId,
+            expertiseAreas: $expertiseAreas,
+            verificationStatus: VerificationStatus::PENDING,
+            stripeAccountId: null,
+            createdAt: $now,
+            updatedAt: $now,
+        );
     }
 
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getUserId(): string
+    public function getUserId(): int
     {
         return $this->userId;
-    }
-
-    public function getEmail(): Email
-    {
-        return $this->email;
-    }
-
-    public function getName(): string
-    {
-        return $this->name;
     }
 
     public function getExpertiseAreas(): array
@@ -64,33 +52,47 @@ class Instructor
         return $this->expertiseAreas;
     }
 
-    public function getVoiceCloneId(): ?string
+    public function getVerificationStatus(): VerificationStatus
     {
-        return $this->voiceCloneId;
+        return $this->verificationStatus;
     }
 
-    public function setVoiceCloneId(string $voiceCloneId): void
+    public function getStripeAccountId(): ?string
     {
-        $this->voiceCloneId = $voiceCloneId;
-    }
-
-    public function getBio(): string
-    {
-        return $this->bio;
-    }
-
-    public function isVerified(): bool
-    {
-        return $this->isVerified;
-    }
-
-    public function verify(): void
-    {
-        $this->isVerified = true;
+        return $this->stripeAccountId;
     }
 
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
+    }
+
+    public function getUpdatedAt(): DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function verify(): void
+    {
+        $this->verificationStatus = VerificationStatus::VERIFIED;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function reject(): void
+    {
+        $this->verificationStatus = VerificationStatus::REJECTED;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function setStripeAccountId(string $stripeAccountId): void
+    {
+        $this->stripeAccountId = $stripeAccountId;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function updateExpertiseAreas(array $expertiseAreas): void
+    {
+        $this->expertiseAreas = $expertiseAreas;
+        $this->updatedAt = new DateTimeImmutable();
     }
 }

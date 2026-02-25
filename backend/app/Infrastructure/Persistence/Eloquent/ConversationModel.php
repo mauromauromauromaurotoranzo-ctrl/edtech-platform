@@ -1,47 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Persistence\Eloquent;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class ConversationModel extends Model
 {
+    use HasFactory;
+
     protected $table = 'conversations';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
         'student_id',
         'knowledge_base_id',
         'messages',
-        'context_retrieval',
+        'chunks_referenced',
         'engagement_score',
-        'last_message_at',
     ];
 
     protected $casts = [
         'messages' => 'array',
-        'context_retrieval' => 'array',
+        'chunks_referenced' => 'array',
         'engagement_score' => 'float',
-        'last_message_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    public function student()
+    public function student(): BelongsTo
     {
         return $this->belongsTo(StudentModel::class, 'student_id');
     }
 
-    public function knowledgeBase()
+    public function knowledgeBase(): BelongsTo
     {
         return $this->belongsTo(KnowledgeBaseModel::class, 'knowledge_base_id');
-    }
-
-    public function scopeRecent($query, $limit = 10)
-    {
-        return $query->orderBy('last_message_at', 'desc')->limit($limit);
     }
 }

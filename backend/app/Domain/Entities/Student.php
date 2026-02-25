@@ -1,58 +1,49 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entities;
 
+use App\Domain\ValueObjects\LearningPreferences;
 use DateTimeImmutable;
-use App\Domain\ValueObjects\Email;
 
 class Student
 {
-    private string $id;
-    private Email $email;
-    private string $name;
-    private array $preferences;
-    private DateTimeImmutable $createdAt;
-    private ?DateTimeImmutable $updatedAt;
-
     public function __construct(
-        string $id,
-        Email $email,
-        string $name,
-        array $preferences = [],
-        ?DateTimeImmutable $createdAt = null
-    ) {
-        $this->id = $id;
-        $this->email = $email;
-        $this->name = $name;
-        $this->preferences = $preferences;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = null;
+        private ?int $id,
+        private int $userId,
+        private LearningPreferences $learningPreferences,
+        private DateTimeImmutable $createdAt,
+        private DateTimeImmutable $updatedAt,
+    ) {}
+
+    public static function create(
+        int $userId,
+        ?LearningPreferences $learningPreferences = null,
+    ): self {
+        $now = new DateTimeImmutable();
+        return new self(
+            id: null,
+            userId: $userId,
+            learningPreferences: $learningPreferences ?? new LearningPreferences(),
+            createdAt: $now,
+            updatedAt: $now,
+        );
     }
 
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getEmail(): Email
+    public function getUserId(): int
     {
-        return $this->email;
+        return $this->userId;
     }
 
-    public function getName(): string
+    public function getLearningPreferences(): LearningPreferences
     {
-        return $this->name;
-    }
-
-    public function getPreferences(): array
-    {
-        return $this->preferences;
-    }
-
-    public function updatePreferences(array $preferences): void
-    {
-        $this->preferences = $preferences;
-        $this->updatedAt = new DateTimeImmutable();
+        return $this->learningPreferences;
     }
 
     public function getCreatedAt(): DateTimeImmutable
@@ -60,8 +51,14 @@ class Student
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function updateLearningPreferences(LearningPreferences $preferences): void
+    {
+        $this->learningPreferences = $preferences;
+        $this->updatedAt = new DateTimeImmutable();
     }
 }

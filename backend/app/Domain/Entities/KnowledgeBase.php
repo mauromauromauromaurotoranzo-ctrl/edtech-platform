@@ -1,54 +1,59 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\Entities;
 
 use DateTimeImmutable;
 
 class KnowledgeBase
 {
-    public const STATUS_DRAFT = 'draft';
-    public const STATUS_PUBLISHED = 'published';
-    public const STATUS_ARCHIVED = 'archived';
-
-    private string $id;
-    private string $instructorId;
-    private string $title;
-    private string $description;
-    private string $slug;
-    private string $status;
-    private array $settings;
-    private ?DateTimeImmutable $lastIndexedAt;
-    private DateTimeImmutable $createdAt;
-    private ?DateTimeImmutable $updatedAt;
-
     public function __construct(
-        string $id,
-        string $instructorId,
+        private ?int $id,
+        private int $instructorId,
+        private string $title,
+        private ?string $description,
+        private string $slug,
+        private KnowledgeBaseStatus $status,
+        private bool $publicAccess,
+        private ?string $pricingModel,
+        private int $totalChunks,
+        private ?DateTimeImmutable $lastIndexedAt,
+        private DateTimeImmutable $createdAt,
+        private DateTimeImmutable $updatedAt,
+    ) {}
+
+    public static function create(
+        int $instructorId,
         string $title,
-        string $description,
+        ?string $description,
         string $slug,
-        string $status = self::STATUS_DRAFT,
-        array $settings = [],
-        ?DateTimeImmutable $createdAt = null
-    ) {
-        $this->id = $id;
-        $this->instructorId = $instructorId;
-        $this->title = $title;
-        $this->description = $description;
-        $this->slug = $slug;
-        $this->status = $status;
-        $this->settings = $settings;
-        $this->lastIndexedAt = null;
-        $this->createdAt = $createdAt ?? new DateTimeImmutable();
-        $this->updatedAt = null;
+        bool $publicAccess = false,
+        ?string $pricingModel = null,
+    ): self {
+        $now = new DateTimeImmutable();
+        return new self(
+            id: null,
+            instructorId: $instructorId,
+            title: $title,
+            description: $description,
+            slug: $slug,
+            status: KnowledgeBaseStatus::DRAFT,
+            publicAccess: $publicAccess,
+            pricingModel: $pricingModel,
+            totalChunks: 0,
+            lastIndexedAt: null,
+            createdAt: $now,
+            updatedAt: $now,
+        );
     }
 
-    public function getId(): string
+    public function getId(): ?int
     {
         return $this->id;
     }
 
-    public function getInstructorId(): string
+    public function getInstructorId(): int
     {
         return $this->instructorId;
     }
@@ -58,21 +63,9 @@ class KnowledgeBase
         return $this->title;
     }
 
-    public function setTitle(string $title): void
-    {
-        $this->title = $title;
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
-    public function getDescription(): string
+    public function getDescription(): ?string
     {
         return $this->description;
-    }
-
-    public function setDescription(string $description): void
-    {
-        $this->description = $description;
-        $this->updatedAt = new DateTimeImmutable();
     }
 
     public function getSlug(): string
@@ -80,32 +73,24 @@ class KnowledgeBase
         return $this->slug;
     }
 
-    public function getStatus(): string
+    public function getStatus(): KnowledgeBaseStatus
     {
         return $this->status;
     }
 
-    public function publish(): void
+    public function isPublicAccess(): bool
     {
-        $this->status = self::STATUS_PUBLISHED;
-        $this->updatedAt = new DateTimeImmutable();
+        return $this->publicAccess;
     }
 
-    public function archive(): void
+    public function getPricingModel(): ?string
     {
-        $this->status = self::STATUS_ARCHIVED;
-        $this->updatedAt = new DateTimeImmutable();
+        return $this->pricingModel;
     }
 
-    public function getSettings(): array
+    public function getTotalChunks(): int
     {
-        return $this->settings;
-    }
-
-    public function updateSettings(array $settings): void
-    {
-        $this->settings = $settings;
-        $this->updatedAt = new DateTimeImmutable();
+        return $this->totalChunks;
     }
 
     public function getLastIndexedAt(): ?DateTimeImmutable
@@ -113,19 +98,47 @@ class KnowledgeBase
         return $this->lastIndexedAt;
     }
 
-    public function markAsIndexed(): void
-    {
-        $this->lastIndexedAt = new DateTimeImmutable();
-        $this->updatedAt = new DateTimeImmutable();
-    }
-
     public function getCreatedAt(): DateTimeImmutable
     {
         return $this->createdAt;
     }
 
-    public function getUpdatedAt(): ?DateTimeImmutable
+    public function getUpdatedAt(): DateTimeImmutable
     {
         return $this->updatedAt;
+    }
+
+    public function publish(): void
+    {
+        $this->status = KnowledgeBaseStatus::PUBLISHED;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function archive(): void
+    {
+        $this->status = KnowledgeBaseStatus::ARCHIVED;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function updateMetadata(string $title, ?string $description, string $slug): void
+    {
+        $this->title = $title;
+        $this->description = $description;
+        $this->slug = $slug;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function updateSettings(bool $publicAccess, ?string $pricingModel): void
+    {
+        $this->publicAccess = $publicAccess;
+        $this->pricingModel = $pricingModel;
+        $this->updatedAt = new DateTimeImmutable();
+    }
+
+    public function markAsIndexed(int $totalChunks): void
+    {
+        $this->totalChunks = $totalChunks;
+        $this->lastIndexedAt = new DateTimeImmutable();
+        $this->updatedAt = new DateTimeImmutable();
     }
 }

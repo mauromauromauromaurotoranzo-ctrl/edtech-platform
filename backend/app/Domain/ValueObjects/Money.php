@@ -1,24 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\ValueObjects;
 
 use InvalidArgumentException;
 
-class Money
+final class Money
 {
-    private int $amount;
+    private int $amount; // Stored in cents to avoid floating point issues
     private string $currency;
 
-    public function __construct(float $amount, string $currency = 'USD')
+    public function __construct(int $amount, string $currency = 'USD')
     {
         if ($amount < 0) {
-            throw new InvalidArgumentException("Amount cannot be negative");
+            throw new InvalidArgumentException('Money amount cannot be negative');
         }
-        $this->amount = (int) round($amount * 100);
+        
+        if (strlen($currency) !== 3) {
+            throw new InvalidArgumentException('Currency must be a 3-letter ISO code');
+        }
+        
+        $this->amount = $amount;
         $this->currency = strtoupper($currency);
     }
 
-    public function getAmount(): float
+    public static function fromDecimal(float $amount, string $currency = 'USD'): self
+    {
+        $cents = (int) round($amount * 100);
+        return new self($cents, $currency);
+    }
+
+    public function getAmount(): int
+    {
+        return $this->amount;
+    }
+
+    public function getAmountInDecimal(): float
     {
         return $this->amount / 100;
     }
@@ -28,29 +46,75 @@ class Money
         return $this->currency;
     }
 
-    public function add(Money $other): Money
+    public function add(Money $other): self
     {
-        if ($this->currency !== $other->getCurrency()) {
-            throw new InvalidArgumentException("Cannot add different currencies");
-        }
-        return new Money(($this->amount + $other->amount) / 100, $this->currency);
+        $this->assertSameCurrency($other);
+        return new self($this->amount + $other->getAmount(), $this->currency);
     }
 
-    public function subtract(Money $other): Money
+    public function subtract(Money $other): self
     {
-        if ($this->currency !== $other->getCurrency()) {
-            throw new InvalidArgumentException("Cannot subtract different currencies");
-        }
-        return new Money(($this->amount - $other->amount) / 100, $this->currency);
+        $this->assertSameCurrency($other);
+        return new self($this->amount - $other->getAmount(), $this->currency);
+    }
+
+    public function multiply(float $factor): self
+    {
+        $newAmount = (int) round($this->amount * $factor);
+        return new self($newAmount, $this->currency);
+    }
+
+    public function percentage(float $percent): self
+    {
+        return $this->multiply($percent / 100);
     }
 
     public function equals(Money $other): bool
     {
-        return $this->amount === $other->amount && $this->currency === $other->currency;
+        return $this->amount === $other->getAmount() 
+            && $this->currency === $other->getCurrency();
+    }
+
+    public function greaterThan(Money $other): bool
+    {
+        $this->assertSameCurrency($other);
+        return $this->amount > $other->getAmount();
+    }
+
+    public function lessThan(Money $other): bool
+    {
+        $this->assertSameCurrency($other);
+        return $this->amount < $other->getAmount();
+    }
+
+    public function isZero(): bool
+    {
+        return $this->amount === 0;
+    }
+
+    public function format(): string
+    {
+        $symbol = match($this->currency) {
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            default => $this->currency . ' ',
+        };
+        
+        return $symbol . number_format($this->getAmountInDecimal(), 2);
+    }
+
+    private function assertSameCurrency(Money $other): void
+    {
+        if ($this->currency !== $other->getCurrency()) {
+            throw new InvalidArgumentException(
+                "Cannot operate on different currencies: {$this->currency} and {$other->getCurrency()}"
+            );
+        }
     }
 
     public function __toString(): string
     {
-        return number_format($this->getAmount(), 2) . ' ' . $this->currency;
+        return $this->format();
     }
 }

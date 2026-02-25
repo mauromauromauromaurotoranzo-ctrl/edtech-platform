@@ -1,71 +1,119 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Domain\ValueObjects;
 
-class LearningPreferences
+final class LearningPreferences
 {
-    private string $learningStyle;
-    private string $difficultyPreference;
-    private array $preferredChannels;
-    private bool $dailyChallengesEnabled;
-    private ?string $reminderTime;
-    private int $sessionDurationMinutes;
-
     public function __construct(
-        string $learningStyle = 'visual',
-        string $difficultyPreference = 'adaptive',
-        array $preferredChannels = ['app'],
-        bool $dailyChallengesEnabled = true,
-        ?string $reminderTime = '09:00',
-        int $sessionDurationMinutes = 30
-    ) {
-        $this->learningStyle = $learningStyle;
-        $this->difficultyPreference = $difficultyPreference;
-        $this->preferredChannels = $preferredChannels;
-        $this->dailyChallengesEnabled = $dailyChallengesEnabled;
-        $this->reminderTime = $reminderTime;
-        $this->sessionDurationMinutes = $sessionDurationMinutes;
-    }
+        private LearningStyle $learningStyle = LearningStyle::BALANCED,
+        private NotificationFrequency $notificationFrequency = NotificationFrequency::DAILY,
+        private bool $voiceEnabled = false,
+        private ?VoiceSettings $voiceSettings = null,
+        private string $preferredLanguage = 'es',
+        private int $dailyGoalMinutes = 30,
+    ) {}
 
-    public function getLearningStyle(): string
+    public function getLearningStyle(): LearningStyle
     {
         return $this->learningStyle;
     }
 
-    public function getDifficultyPreference(): string
+    public function getNotificationFrequency(): NotificationFrequency
     {
-        return $this->difficultyPreference;
+        return $this->notificationFrequency;
     }
 
-    public function getPreferredChannels(): array
+    public function isVoiceEnabled(): bool
     {
-        return $this->preferredChannels;
+        return $this->voiceEnabled;
     }
 
-    public function isDailyChallengesEnabled(): bool
+    public function getVoiceSettings(): ?VoiceSettings
     {
-        return $this->dailyChallengesEnabled;
+        return $this->voiceSettings;
     }
 
-    public function getReminderTime(): ?string
+    public function getPreferredLanguage(): string
     {
-        return $this->reminderTime;
+        return $this->preferredLanguage;
     }
 
-    public function getSessionDurationMinutes(): int
+    public function getDailyGoalMinutes(): int
     {
-        return $this->sessionDurationMinutes;
+        return $this->dailyGoalMinutes;
+    }
+
+    public function withLearningStyle(LearningStyle $style): self
+    {
+        return new self(
+            learningStyle: $style,
+            notificationFrequency: $this->notificationFrequency,
+            voiceEnabled: $this->voiceEnabled,
+            voiceSettings: $this->voiceSettings,
+            preferredLanguage: $this->preferredLanguage,
+            dailyGoalMinutes: $this->dailyGoalMinutes,
+        );
+    }
+
+    public function withNotificationFrequency(NotificationFrequency $frequency): self
+    {
+        return new self(
+            learningStyle: $this->learningStyle,
+            notificationFrequency: $frequency,
+            voiceEnabled: $this->voiceEnabled,
+            voiceSettings: $this->voiceSettings,
+            preferredLanguage: $this->preferredLanguage,
+            dailyGoalMinutes: $this->dailyGoalMinutes,
+        );
+    }
+
+    public function withVoiceEnabled(bool $enabled, ?VoiceSettings $settings = null): self
+    {
+        return new self(
+            learningStyle: $this->learningStyle,
+            notificationFrequency: $this->notificationFrequency,
+            voiceEnabled: $enabled,
+            voiceSettings: $settings,
+            preferredLanguage: $this->preferredLanguage,
+            dailyGoalMinutes: $this->dailyGoalMinutes,
+        );
+    }
+
+    public function withDailyGoal(int $minutes): self
+    {
+        return new self(
+            learningStyle: $this->learningStyle,
+            notificationFrequency: $this->notificationFrequency,
+            voiceEnabled: $this->voiceEnabled,
+            voiceSettings: $this->voiceSettings,
+            preferredLanguage: $this->preferredLanguage,
+            dailyGoalMinutes: max(5, min(180, $minutes)),
+        );
     }
 
     public function toArray(): array
     {
         return [
-            'learning_style' => $this->learningStyle,
-            'difficulty_preference' => $this->difficultyPreference,
-            'preferred_channels' => $this->preferredChannels,
-            'daily_challenges_enabled' => $this->dailyChallengesEnabled,
-            'reminder_time' => $this->reminderTime,
-            'session_duration_minutes' => $this->sessionDurationMinutes,
+            'learning_style' => $this->learningStyle->value,
+            'notification_frequency' => $this->notificationFrequency->value,
+            'voice_enabled' => $this->voiceEnabled,
+            'voice_settings' => $this->voiceSettings?->toArray(),
+            'preferred_language' => $this->preferredLanguage,
+            'daily_goal_minutes' => $this->dailyGoalMinutes,
         ];
+    }
+
+    public static function fromArray(array $data): self
+    {
+        return new self(
+            learningStyle: LearningStyle::tryFrom($data['learning_style'] ?? '') ?? LearningStyle::BALANCED,
+            notificationFrequency: NotificationFrequency::tryFrom($data['notification_frequency'] ?? '') ?? NotificationFrequency::DAILY,
+            voiceEnabled: $data['voice_enabled'] ?? false,
+            voiceSettings: isset($data['voice_settings']) ? VoiceSettings::fromArray($data['voice_settings']) : null,
+            preferredLanguage: $data['preferred_language'] ?? 'es',
+            dailyGoalMinutes: $data['daily_goal_minutes'] ?? 30,
+        );
     }
 }

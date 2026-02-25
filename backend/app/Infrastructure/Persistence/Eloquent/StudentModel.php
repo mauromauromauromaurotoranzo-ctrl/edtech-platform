@@ -1,48 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Persistence\Eloquent;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class StudentModel extends Model
 {
-    use SoftDeletes;
+    use HasFactory;
 
-    protected $table = 'users';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
+    protected $table = 'students';
 
     protected $fillable = [
-        'id',
-        'email',
-        'password',
-        'role',
-        'name',
-        'preferences',
-        'email_verified_at',
+        'user_id',
+        'learning_preferences',
     ];
 
     protected $casts = [
-        'preferences' => 'array',
-        'email_verified_at' => 'datetime',
+        'learning_preferences' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(UserModel::class, 'user_id');
+    }
 
-    public function subscriptions()
+    public function subscriptions(): HasMany
     {
         return $this->hasMany(SubscriptionModel::class, 'student_id');
     }
 
-    public function conversations()
+    public function conversations(): HasMany
     {
         return $this->hasMany(ConversationModel::class, 'student_id');
     }

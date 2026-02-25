@@ -1,61 +1,56 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Infrastructure\Persistence\Eloquent;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class KnowledgeBaseModel extends Model
 {
-    use SoftDeletes;
+    use HasFactory;
 
     protected $table = 'knowledge_bases';
-    protected $primaryKey = 'id';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
-        'id',
         'instructor_id',
         'title',
         'description',
         'slug',
         'status',
-        'settings',
+        'public_access',
+        'pricing_model',
         'total_chunks',
         'last_indexed_at',
     ];
 
     protected $casts = [
-        'settings' => 'array',
+        'public_access' => 'boolean',
         'total_chunks' => 'integer',
         'last_indexed_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
-        'deleted_at' => 'datetime',
     ];
 
-    public function instructor()
+    public function instructor(): BelongsTo
     {
         return $this->belongsTo(InstructorModel::class, 'instructor_id');
     }
 
-    public function courses()
+    public function courses(): HasMany
     {
         return $this->hasMany(CourseModel::class, 'knowledge_base_id');
     }
 
-    public function contentChunks()
-    {
-        return $this->hasMany(ContentChunkModel::class, 'knowledge_base_id');
-    }
-
-    public function subscriptions()
+    public function subscriptions(): HasMany
     {
         return $this->hasMany(SubscriptionModel::class, 'knowledge_base_id');
     }
 
-    public function conversations()
+    public function conversations(): HasMany
     {
         return $this->hasMany(ConversationModel::class, 'knowledge_base_id');
     }
