@@ -57,16 +57,21 @@ IA conversacional con voz personalizada lista
 ---
 
 ### 📋 BLOQUE 4: Sistema de Desafíos Diarios
-**Estado:** ⏳ Pendiente  
+**Estado:** ✅ COMPLETADO  
 **Duración estimada:** 2-3 horas  
 **Dependencias:** Bloques 1, 2, 3
 
 #### Tareas:
-- [ ] Entity DailyChallenge con tipos (QUIZ, PUZZLE, SCENARIO, FLASHCARD)
-- [ ] Generador de desafíos con IA
-- [ ] Scheduler para envío diario (Laravel Scheduler)
-- [ ] Evaluador de respuestas
-- [ ] Sistema de puntos/recompensas
+- [x] Entity DailyChallenge con tipos (QUIZ, PUZZLE, SCENARIO, FLASHCARD, CODE, MATCHING)
+- [x] Entity StudentProgress (puntos, streaks, niveles, logros)
+- [x] ChallengeType ValueObject
+- [x] Generador de desafíos con IA (6 tipos diferentes)
+- [x] Evaluador de respuestas (auto + AI)
+- [x] Servicio de scheduler para envío diario
+- [x] Sistema de puntos/recompensas con logros
+- [x] Leaderboard por knowledge base
+- [x] 2 migraciones adicionales
+- [x] Comandos Artisan para cron jobs
 
 #### Entregable:
 Desafíos automáticos funcionando
@@ -169,11 +174,11 @@ Producción live y estable
 - [x] Bloque 1
 - [x] Bloque 2
 - [x] Bloque 3
-- [ ] Bloque 4
+- [x] Bloque 4
 - [ ] Bloque 5
 - [ ] Bloque 6
 - [ ] Bloque 7
 - [ ] Bloque 8
 - [ ] Bloque 9
 
-**Progreso: 3/9 bloques completados (33%)**
+**Progreso: 4/9 bloques completados (44%)**
