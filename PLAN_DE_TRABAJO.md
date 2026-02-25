@@ -2,34 +2,34 @@
 ## Ejecución por Bloques
 
 ### 📋 BLOQUE 1: Estructura Backend Hexagonal
-**Estado:** ⏳ Pendiente  
+**Estado:** ✅ COMPLETADO  
 **Duración estimada:** 2-3 horas  
 **Dependencias:** Ninguna
 
 #### Tareas:
-- [ ] Crear directorios de arquitectura hexagonal
-- [ ] Implementar entidades del Domain (Student, Instructor, KnowledgeBase, Course, Subscription, Conversation)
-- [ ] Crear ValueObjects (Email, Money, VoiceSettings, LearningPreferences)
-- [ ] Definir RepositoryInterfaces
-- [ ] Crear migraciones Laravel
-- [ ] Implementar Repositorios Eloquent
+- [x] Crear directorios de arquitectura hexagonal
+- [x] Implementar entidades del Domain (User, Student, Instructor, KnowledgeBase, Course, Subscription, Conversation, Message, Module, Lesson)
+- [x] Crear ValueObjects (Email, Money, VoiceSettings, LearningPreferences, LearningStyle, NotificationFrequency)
+- [x] Definir RepositoryInterfaces (7 interfaces)
+- [x] Crear migraciones Laravel (7 migraciones)
+- [x] Implementar Repositorios Eloquent (7 repositorios)
 
 #### Entregable:
-Estructura base del backend lista para usar en `/backend/`
+Estructura base del backend lista para usar en `/app/`
 
 ---
 
 ### 📋 BLOQUE 2: Adaptadores de Mensajería
-**Estado:** ⏳ Pendiente  
+**Estado:** ✅ COMPLETADO  
 **Duración estimada:** 2-3 horas  
 **Dependencias:** Bloque 1
 
 #### Tareas:
-- [ ] Adaptador WhatsApp Business API
-- [ ] Adaptador Telegram Bot (ya configurado)
-- [ ] Adaptador Email (SMTP)
-- [ ] Sistema de preferencias de canal por estudiante
-- [ ] Fallback entre canales
+- [x] Adaptador WhatsApp Business API
+- [x] Adaptador Telegram Bot (ya configurado)
+- [x] Adaptador Email (SMTP)
+- [x] Sistema de preferencias de canal por estudiante
+- [x] Fallback entre canales
 
 #### Entregable:
 Sistema de notificaciones multi-canal funcional
@@ -163,8 +163,8 @@ Producción live y estable
 4. **Reportar progreso y cualquier bloqueo encontrado**
 
 ## 📊 Progreso General
-- [ ] Bloque 1
-- [ ] Bloque 2
+- [x] Bloque 1
+- [x] Bloque 2
 - [ ] Bloque 3
 - [ ] Bloque 4
 - [ ] Bloque 5
@@ -173,4 +173,4 @@ Producción live y estable
 - [ ] Bloque 8
 - [ ] Bloque 9
 
-**Progreso: 0/9 bloques completados (0%)**
+**Progreso: 2/9 bloques completados (22%)**
