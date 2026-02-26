@@ -1,4 +1,4 @@
-FROM php:8.3-fpm
+FROM php:8.4-fpm
 
 # Install dependencies
 RUN apt-get update && apt-get install -y \
@@ -16,17 +16,17 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy composer files (solo composer.json si no hay lock)
+# Copy composer files
 COPY composer.json ./
 
-# Install dependencies (sin lock file)
+# Install dependencies (sin lock file, sin scripts)
 RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 
 # Copy application
 COPY . .
 
 # Generate autoloader
-RUN composer dump-autoload
+RUN composer dump-autoload --optimize
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www \
