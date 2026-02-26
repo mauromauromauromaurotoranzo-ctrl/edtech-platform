@@ -16,6 +16,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
+# Create necessary directories
+RUN mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs \
+    && chown -R www-data:www-data bootstrap storage
+
 # Copy composer files
 COPY composer.json ./
 
@@ -25,10 +29,15 @@ RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 # Copy application
 COPY . .
 
+# Set permissions before autoload
+RUN chown -R www-data:www-data /var/www \
+    && chmod -R 755 /var/www/bootstrap/cache \
+    && chmod -R 755 /var/www/storage
+
 # Generate autoloader
 RUN composer dump-autoload --optimize
 
-# Set permissions
+# Final permissions
 RUN chown -R www-data:www-data /var/www \
     && chmod -R 755 /var/www/storage
 
