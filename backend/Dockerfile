@@ -16,30 +16,26 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Create necessary directories
-RUN mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs \
-    && chown -R www-data:www-data bootstrap storage
-
-# Copy composer files
+# Copy composer files first (for better caching)
 COPY composer.json ./
 
-# Install dependencies (sin lock file, sin scripts)
+# Install PHP dependencies
 RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 
-# Copy application
+# Copy application code
 COPY . .
 
-# Set permissions before autoload
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/bootstrap/cache \
-    && chmod -R 755 /var/www/storage
+# Copy entrypoint
+COPY docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Generate autoloader
-RUN composer dump-autoload --optimize
+# Create necessary directories
+RUN mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
 
-# Final permissions
-RUN chown -R www-data:www-data /var/www \
-    && chmod -R 755 /var/www/storage
+# Set permissions
+RUN chown -R www-data:www-data /var/www
 
 EXPOSE 9000
+
+ENTRYPOINT ["docker-entrypoint.sh"]
 CMD ["php-fpm"]
