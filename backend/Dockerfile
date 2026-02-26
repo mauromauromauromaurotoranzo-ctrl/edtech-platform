@@ -19,18 +19,18 @@ WORKDIR /var/www
 # Copy composer files first (for better caching)
 COPY composer.json ./
 
-# Install PHP dependencies
+# Install PHP dependencies (sin scripts, sin autoloader todavía)
 RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 
 # Copy application code
 COPY . .
 
+# Create necessary directories
+RUN mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
+
 # Copy entrypoint
 COPY docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
-
-# Create necessary directories
-RUN mkdir -p bootstrap/cache storage/framework/cache storage/framework/sessions storage/framework/views storage/logs
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www
