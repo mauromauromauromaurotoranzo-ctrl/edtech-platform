@@ -1,116 +1,128 @@
-# EdTech Platform - Proyecto Educativo con IA
+# EdTech Platform
 
-**Emprendedor:** Mauro Toranzo  
-**Fecha inicio:** Febrero 2025  
-**Estado:** Definiendo arquitectura y MVP
+Plataforma educativa con IA generativa para aprendizaje personalizado.
 
----
+## 🚀 Características
 
-## 🎯 Visión
+- **IA Conversacional**: Chat con RAG (Retrieval Augmented Generation)
+- **Voice Cloning**: Voces personalizadas de instructores vía ElevenLabs
+- **Desafíos Diarios**: 6 tipos de desafíos generados automáticamente
+- **Spaced Repetition**: Algoritmo SM-2 para repaso óptimo
+- **Recordatorios Inteligentes**: Detección de inactividad, recordatorios de examen
+- **Gamificación**: Puntos, niveles, streaks, logros, leaderboard
+- **Multi-canal**: Notificaciones por Telegram, WhatsApp, Email
 
-Plataforma educativa donde instructores entrenan conocimiento estructurado y estudiantes aprenden mediante IA conversacional adaptativa.
-
-> "La nueva era de los libros" — aprendizaje interactivo, divertido y personalizable.
-
----
-
-## 📁 Estructura del Proyecto
+## 🏗️ Arquitectura
 
 ```
-edtech-platform/
-├── ARCHITECTURE.md          # Arquitectura técnica completa
-├── README.md                # Este archivo
-├── agents/                  # Perfiles de agentes especializados
-│   ├── BACKEND_DEV.md
-│   ├── FRONTEND_DEV.md
-│   ├── IA_SPECIALIST.md
-│   ├── PRODUCT_MANAGER.md
-│   └── DEVOPS.md
-├── backend/                 # Código Laravel (próximamente)
-├── frontend/                # Código Next.js (próximamente)
-├── docs/                    # Documentación adicional
-└── memory/                  # Decisiones y aprendizajes
+Hexagonal Architecture (Ports & Adapters)
+├── Domain/           # Entidades, Value Objects, Interfaces
+├── Application/      # Casos de uso, Servicios
+├── Infrastructure/   # Adaptadores (Eloquent, APIs externas)
+└── Http/            # Controllers, Routes
 ```
-
----
-
-## 🚀 Estado Actual
-
-### ✅ Completado
-- [x] Definición de concepto y modelo de negocio
-- [x] Arquitectura técnica inicial
-- [x] Stack tecnológico definido
-- [x] Modelos de datos diseñados
-- [x] Agentes especializados configurados
-
-### 🔄 En Progreso
-- [ ] Definir features exactas del MVP
-- [ ] Elegir entre Laravel+React o Next.js full-stack
-- [ ] Crear repositorio Git
-- [ ] Setup inicial de proyecto
-
-### ⏳ Pendiente
-- [ ] Desarrollo backend (APIs, auth, DB)
-- [ ] Desarrollo frontend (UI, chat IA)
-- [ ] Integración RAG y embeddings
-- [ ] Sistema de pagos
-- [ ] Testing y QA
-- [ ] Deploy a producción
-
----
-
-## 👥 Agentes Disponibles
-
-Cada agente tiene un perfil detallado en `/agents/`:
-
-| Agente | Archivo | Uso |
-|--------|---------|-----|
-| 🏗️ Arquitecto | `ARCHITECTURE.md` | Decisiones técnicas de alto nivel |
-| ⚙️ Backend Dev | `BACKEND_DEV.md` | APIs, base de datos, lógica |
-| 🎨 Frontend Dev | `FRONTEND_DEV.md` | UI/UX, componentes React |
-| 🤖 IA Specialist | `IA_SPECIALIST.md` | Embeddings, RAG, prompts |
-| 📊 Product Manager | `PRODUCT_MANAGER.md` | Roadmap, prioridades, OKRs |
-| 🚀 DevOps | `DEVOPS.md` | Infra, deploy, monitoreo |
-
----
-
-## 💬 Cómo Usar los Agentes
-
-Para consultar a un agente específico, decime:
-
-> "@BackendDev, ¿cómo implemento la autenticación JWT?"
-
-O simplemente preguntame y yo invoco al agente adecuado según el contexto.
-
----
-
-## ❓ Preguntas Clave por Responder
-
-1. **¿Un instructor = un curso, o puede tener varios?**
-2. **¿El estudiante paga por curso o suscripción mensual general?**
-3. **¿La interacción IA es tipo chat o algo más visual/interactivo?**
-
----
 
 ## 🛠️ Stack Tecnológico
 
-| Capa | Tecnología |
-|------|------------|
-| Backend | Laravel 11, PHP 8.3 |
-| Frontend | Next.js 14, TypeScript, Tailwind |
-| Base de datos | PostgreSQL 16, Redis |
-| Vector DB | Pinecone / pgvector |
-| IA | OpenRouter, OpenAI Embeddings |
-| Hosting | Laravel Forge + DigitalOcean |
-| CI/CD | GitHub Actions |
+### Backend
+- Laravel 11 + PHP 8.3
+- PostgreSQL 16
+- Redis (caché, colas)
+- OpenRouter (LLMs)
+- ElevenLabs (Voice Cloning)
+- OpenAI (Embeddings)
 
----
+### Frontend
+- Next.js 14 + TypeScript
+- Tailwind CSS
+- React Query
+- Zustand (state management)
 
-## 📞 Contacto
+## 📦 Instalación
 
-- **Telegram:** @Elmaquinas99_bot
-- **Desarrollador:** Mauro Toranzo
+### Requisitos
+- Docker & Docker Compose
+- Git
 
----
+### Local Development
 
-*Última actualización: 2025-02-25*
+```bash
+# Clonar repositorio
+git clone https://github.com/mauromauromauromaurotoranzo-ctrl/edtech-platform.git
+cd edtech-platform
+
+# Configurar variables de entorno
+cp backend/.env.example backend/.env
+
+# Iniciar servicios
+docker-compose up -d
+
+# Instalar dependencias
+docker-compose exec app composer install
+docker-compose exec app php artisan key:generate
+docker-compose exec app php artisan migrate
+
+# Frontend
+cd frontend
+npm install
+npm run dev
+```
+
+## 🔧 Configuración
+
+Variables de entorno necesarias en `backend/.env`:
+
+```env
+# Database
+DB_CONNECTION=pgsql
+DB_HOST=db
+DB_PORT=5432
+DB_DATABASE=edtech
+DB_USERNAME=postgres
+DB_PASSWORD=secret
+
+# APIs
+OPENROUTER_API_KEY=your_key
+ELEVENLABS_API_KEY=your_key
+OPENAI_API_KEY=your_key
+
+# Telegram (opcional)
+TELEGRAM_BOT_TOKEN=your_token
+```
+
+## 🧪 Testing
+
+```bash
+# Backend tests
+docker-compose exec app php artisan test
+
+# Frontend tests
+cd frontend && npm test
+```
+
+## 📚 API Endpoints
+
+### Auth
+- `POST /api/register` - Registro
+- `POST /api/login` - Login
+- `GET /api/me` - Perfil usuario
+
+### Chat
+- `POST /api/chat` - Enviar mensaje
+- `GET /api/conversations` - Listar conversaciones
+
+### Challenges
+- `GET /api/challenge/daily` - Desafío del día
+- `POST /api/challenge/answer` - Responder desafío
+- `GET /api/leaderboard` - Tabla de líderes
+
+## 🚀 Deploy
+
+```bash
+# Producción
+./deploy.sh
+```
+
+## 📄 Licencia
+
+MIT License
