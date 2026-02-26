@@ -16,11 +16,11 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /var/www
 
-# Copy composer files
-COPY composer.json composer.lock ./
+# Copy composer files (solo composer.json si no hay lock)
+COPY composer.json ./
 
-# Install dependencies
-RUN composer install --no-scripts --no-autoloader
+# Install dependencies (sin lock file)
+RUN composer install --no-scripts --no-autoloader --ignore-platform-reqs
 
 # Copy application
 COPY . .

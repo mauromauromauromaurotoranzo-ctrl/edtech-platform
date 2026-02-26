@@ -1,333 +1,274 @@
 #!/bin/bash
 
-# ============================================
-# EdTech Platform - Setup Local
-# ============================================
-# Script para desplegar y probar localmente
+# 🚀 Script de Setup Local para EdTech Platform
+# Este script configura el proyecto para pruebas locales
 
-set -e
+set -e  # Detenerse en cualquier error
 
-# Colores
+echo "🎓 EdTech Platform - Setup Local"
+echo "================================="
+echo ""
+
+# Colores para output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Funciones
-print_status() {
-    echo -e "${BLUE}[INFO]${NC} $1"
-}
+# Detectar OS
+OS="$(uname -s)"
+case "${OS}" in
+    Linux*)     PLATFORM=Linux;;
+    Darwin*)    PLATFORM=Mac;;
+    CYGWIN*|MINGW*|MSYS*) PLATFORM=Windows;;
+    *)          PLATFORM="UNKNOWN:${OS}"
+esac
 
-print_success() {
-    echo -e "${GREEN}[OK]${NC} $1"
-}
-
-print_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-print_error() {
-    echo -e "${RED}[ERROR]${NC} $1"
-}
+echo -e "${BLUE}Sistema detectado: ${PLATFORM}${NC}"
+echo ""
 
 # Verificar dependencias
-check_dependencies() {
-    print_status "Verificando dependencias..."
-    
-    command -v docker >/dev/null 2>&1 || { print_error "Docker no está instalado. Instálalo primero."; exit 1; }
-    command -v docker-compose >/dev/null 2>&1 || { print_error "Docker Compose no está instalado. Instálalo primero."; exit 1; }
-    command -v npm >/dev/null 2>&1 || { print_error "Node.js/npm no está instalado. Instálalo primero."; exit 1; }
-    
-    print_success "Todas las dependencias están instaladas"
+echo "🔍 Verificando dependencias..."
+
+# Función para verificar comando
+command_exists() {
+    command -v "$1" >/dev/null 2>&1
 }
 
-# Setup Backend
-setup_backend() {
-    print_status "Configurando Backend..."
+MISSING_DEPS=()
+
+if ! command_exists php; then
+    MISSING_DEPS+=("PHP 8.3+")
+fi
+
+if ! command_exists composer; then
+    MISSING_DEPS+=("Composer")
+fi
+
+if ! command_exists node; then
+    MISSING_DEPS+=("Node.js 20+")
+fi
+
+if ! command_exists npm; then
+    MISSING_DEPS+=("npm")
+fi
+
+if [ ${#MISSING_DEPS[@]} -ne 0 ]; then
+    echo -e "${RED}❌ Faltan dependencias:${NC}"
+    for dep in "${MISSING_DEPS[@]}"; do
+        echo "   - $dep"
+    done
+    echo ""
+    echo "Por favor instala las dependencias faltantes:"
+    echo ""
+    echo "📦 PHP 8.3+ y Composer:"
+    echo "   Ubuntu/Debian: sudo apt install php8.3 php8.3-{pgsql,sqlite,zip,mbstring,xml,curl} composer"
+    echo "   Mac: brew install php@8.3 composer"
+    echo "   Windows: https://windows.php.net/download + https://getcomposer.org"
+    echo ""
+    echo "📦 Node.js 20+:"
+    echo "   https://nodejs.org (descarga el instalador LTS)"
+    echo ""
+    exit 1
+fi
+
+echo -e "${GREEN}✅ Todas las dependencias están instaladas${NC}"
+echo ""
+
+# Obtener directorio del script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$SCRIPT_DIR"
+
+# ============================================
+# BACKEND SETUP
+# ============================================
+echo -e "${BLUE}📦 Configurando Backend (Laravel)...${NC}"
+echo ""
+
+cd backend
+
+# Instalar dependencias de Composer
+echo "⬇️  Instalando dependencias de PHP..."
+if [ ! -d "vendor" ]; then
+    composer install --no-interaction --quiet
+    echo -e "${GREEN}✅ Dependencias instaladas${NC}"
+else
+    echo -e "${YELLOW}⚠️  vendor/ ya existe, saltando...${NC}"
+fi
+
+# Configurar archivo .env
+echo "⚙️  Configurando entorno..."
+if [ ! -f ".env" ]; then
+    cp .env.example .env
     
-    cd backend
+    # Generar APP_KEY
+    php artisan key:generate --quiet
     
-    # Crear .env si no existe
-    if [ ! -f .env ]; then
-        print_status "Creando archivo .env..."
-        cat > .env << 'EOF'
-APP_NAME="EdTech Platform"
-APP_ENV=local
-APP_KEY=
-APP_DEBUG=true
-APP_URL=http://localhost:8000
-APP_TIMEZONE=Asia/Shanghai
+    # Configurar SQLite para pruebas rápidas
+    mkdir -p database
+    touch database/database.sqlite
+    
+    # Actualizar .env para usar SQLite
+    sed -i.bak 's/DB_CONNECTION=.*/DB_CONNECTION=sqlite/' .env
+    sed -i.bak 's|DB_DATABASE=.*|DB_DATABASE='"$SCRIPT_DIR"'/backend/database/database.sqlite|' .env
+    rm -f .env.bak
+    
+    echo -e "${GREEN}✅ Entorno configurado (SQLite)${NC}"
+else
+    echo -e "${YELLOW}⚠️  .env ya existe, saltando...${NC}"
+fi
 
-LOG_CHANNEL=stack
-LOG_LEVEL=debug
+# Ejecutar migraciones
+echo "🗄️  Creando base de datos..."
+php artisan migrate:fresh --seed --force --quiet
+echo -e "${GREEN}✅ Base de datos lista${NC}"
 
-DB_CONNECTION=pgsql
-DB_HOST=postgres
-DB_PORT=5432
-DB_DATABASE=edtech
-DB_USERNAME=edtech
-DB_PASSWORD=secret
+# Crear storage link
+php artisan storage:link --quiet 2>/dev/null || true
 
-BROADCAST_DRIVER=log
-CACHE_DRIVER=redis
-FILESYSTEM_DISK=local
-QUEUE_CONNECTION=redis
-SESSION_DRIVER=database
-SESSION_LIFETIME=120
+cd ..
 
-MEMCACHED_HOST=127.0.0.1
+# ============================================
+# FRONTEND SETUP
+# ============================================
+echo ""
+echo -e "${BLUE}🎨 Configurando Frontend (Next.js)...${NC}"
+echo ""
 
-REDIS_HOST=redis
-REDIS_PASSWORD=null
-REDIS_PORT=6379
+cd frontend
 
-MAIL_MAILER=smtp
-MAIL_HOST=mailpit
-MAIL_PORT=1025
-MAIL_USERNAME=null
-MAIL_PASSWORD=null
-MAIL_ENCRYPTION=null
-MAIL_FROM_ADDRESS="noreply@edtech.com"
-MAIL_FROM_NAME="${APP_NAME}"
+# Instalar dependencias de npm
+echo "⬇️  Instalando dependencias de Node..."
+if [ ! -d "node_modules" ]; then
+    npm install --silent
+    echo -e "${GREEN}✅ Dependencias instaladas${NC}"
+else
+    echo -e "${YELLOW}⚠️  node_modules/ ya existe, saltando...${NC}"
+fi
 
-# APIs (opcional - para funcionalidad completa)
-OPENROUTER_API_KEY=
-ELEVENLABS_API_KEY=
-OPENAI_API_KEY=
-TELEGRAM_BOT_TOKEN=
+# Configurar API URL
+echo "⚙️  Configurando API..."
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000/api" > .env.local
+echo -e "${GREEN}✅ API configurada${NC}"
 
-SANCTUM_STATEFUL_DOMAINS=localhost:3000
-SESSION_DOMAIN=localhost
-EOF
-        print_success "Archivo .env creado"
+cd ..
+
+# ============================================
+# INICIAR SERVIDORES
+# ============================================
+echo ""
+echo -e "${GREEN}🚀 ¡Setup completado! Iniciando servidores...${NC}"
+echo ""
+
+# Función para limpiar procesos al salir
+cleanup() {
+    echo ""
+    echo -e "${YELLOW}🛑 Deteniendo servidores...${NC}"
+    if [ -n "$BACKEND_PID" ]; then
+        kill $BACKEND_PID 2>/dev/null || true
     fi
-    
-    # Instalar dependencias si vendor no existe
-    if [ ! -d vendor ]; then
-        print_status "Instalando dependencias PHP..."
-        docker run --rm -v $(pwd):/app -w /app composer:latest composer install --no-dev --optimize-autoloader
+    if [ -n "$FRONTEND_PID" ]; then
+        kill $FRONTEND_PID 2>/dev/null || true
     fi
-    
-    # Generar key
-    if [ -z "$(grep '^APP_KEY=' .env | cut -d= -f2)" ]; then
-        print_status "Generando APP_KEY..."
-        docker run --rm -v $(pwd):/app -w /app php:8.3-cli php artisan key:generate
-    fi
-    
-    cd ..
-    print_success "Backend configurado"
+    echo -e "${GREEN}👋 Hasta luego!${NC}"
+    exit 0
 }
 
-# Setup Frontend
-setup_frontend() {
-    print_status "Configurando Frontend..."
-    
-    cd frontend
-    
-    # Crear .env.local si no existe
-    if [ ! -f .env.local ]; then
-        print_status "Creando .env.local..."
-        cat > .env.local << 'EOF'
-NEXT_PUBLIC_API_URL=http://localhost:8000/api
-NEXT_PUBLIC_APP_NAME="EdTech Platform"
-EOF
-        print_success "Archivo .env.local creado"
-    fi
-    
-    # Instalar dependencias si node_modules no existe
-    if [ ! -d node_modules ]; then
-        print_status "Instalando dependencias Node.js..."
-        npm install
-    fi
-    
-    cd ..
-    print_success "Frontend configurado"
-}
+trap cleanup SIGINT SIGTERM
 
-# Iniciar con Docker
-start_docker() {
-    print_status "Iniciando servicios con Docker..."
-    
-    # Verificar si docker-compose.yml existe
-    if [ ! -f docker-compose.yml ]; then
-        print_error "No se encontró docker-compose.yml"
+# Iniciar backend
+echo -e "${BLUE}▶️  Iniciando Backend en http://localhost:8000${NC}"
+cd backend
+php artisan serve --host=0.0.0.0 --port=8000 > /tmp/backend.log 2>&1 &
+BACKEND_PID=$!
+cd ..
+
+# Esperar a que backend esté listo
+echo "⏳ Esperando backend..."
+for i in {1..30}; do
+    if curl -s http://localhost:8000 > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Backend listo!${NC}"
+        break
+    fi
+    sleep 1
+    if [ $i -eq 30 ]; then
+        echo -e "${RED}❌ Timeout esperando backend${NC}"
+        echo "Revisa el log: /tmp/backend.log"
         exit 1
     fi
-    
-    # Construir e iniciar
-    docker-compose up -d --build
-    
-    print_success "Servicios iniciados"
-    
-    # Esperar a que postgres esté listo
-    print_status "Esperando a que PostgreSQL esté listo..."
-    sleep 5
-    
-    # Ejecutar migraciones
-    print_status "Ejecutando migraciones..."
-    docker-compose exec -T app php artisan migrate --force || true
-    
-    # Seed básico (opcional)
-    print_status "Creando usuario admin de prueba..."
-    docker-compose exec -T app php artisan tinker --execute="
-    use App\Infrastructure\Persistence\Eloquent\UserEloquentModel;
-    use Illuminate\Support\Facades\Hash;
-    
-    UserEloquentModel::firstOrCreate(
-        ['email' => 'admin@edtech.com'],
-        [
-            'name' => 'Admin',
-            'password' => Hash::make('admin123'),
-            'email_verified_at' => now(),
-        ]
-    );
-    echo 'Usuario admin creado: admin@edtech.com / admin123';
-    " || true
-}
+done
 
-# Iniciar frontend en modo desarrollo
-start_frontend() {
-    print_status "Iniciando frontend en modo desarrollo..."
-    
-    cd frontend
-    
-    # Iniciar en background
-    npm run dev &
-    FRONTEND_PID=$!
-    
-    cd ..
-    
-    print_success "Frontend iniciado (PID: $FRONTEND_PID)"
-}
+# Iniciar frontend
+echo -e "${BLUE}▶️  Iniciando Frontend en http://localhost:3000${NC}"
+cd frontend
+npm run dev > /tmp/frontend.log 2>&1 &
+FRONTEND_PID=$!
+cd ..
 
-# Mostrar información final
-show_info() {
-    echo ""
-    echo "=========================================="
-    echo -e "${GREEN}✅ EdTech Platform está listo!${NC}"
-    echo "=========================================="
-    echo ""
-    echo "🌐 URLs disponibles:"
-    echo "   • Frontend:     http://localhost:3000"
-    echo "   • Backend API:  http://localhost:8000/api"
-    echo "   • Adminer (DB): http://localhost:8080"
-    echo ""
-    echo "👤 Credenciales de prueba:"
-    echo "   • Email:    admin@edtech.com"
-    echo "   • Password: admin123"
-    echo ""
-    echo "📁 Rutas del proyecto:"
-    echo "   • Admin Login:  http://localhost:3000/admin/login"
-    echo "   • Instructor:   http://localhost:3000/instructor/dashboard"
-    echo "   • Upload:       http://localhost:3000/instructor/upload"
-    echo ""
-    echo "🐳 Comandos Docker útiles:"
-    echo "   • Ver logs:     docker-compose logs -f"
-    echo "   • Detener:      docker-compose down"
-    echo "   • Reiniciar:    docker-compose restart"
-    echo ""
-    echo "⚠️  NOTA: Las APIs de IA requieren keys en backend/.env"
-    echo "   (OpenRouter, ElevenLabs, OpenAI)"
-    echo ""
-    echo "Presiona Ctrl+C para detener el frontend"
-    echo "=========================================="
-}
-
-# Menu interactivo
-show_menu() {
-    echo ""
-    echo "=========================================="
-    echo "    EdTech Platform - Setup Local"
-    echo "=========================================="
-    echo ""
-    echo "Opciones:"
-    echo "  1) Setup completo (Docker + Frontend)"
-    echo "  2) Solo Docker (backend + DB)"
-    echo "  3) Solo Frontend"
-    echo "  4) Detener todo"
-    echo "  5) Ver logs"
-    echo "  q) Salir"
-    echo ""
-}
-
-# Main
-main() {
-    # Si se pasa argumento, ejecutar directo
-    if [ "$1" = "full" ]; then
-        check_dependencies
-        setup_backend
-        setup_frontend
-        start_docker
-        start_frontend
-        show_info
-        # Mantener script corriendo
-        wait
-        exit 0
+# Esperar a que frontend esté listo
+echo "⏳ Esperando frontend..."
+for i in {1..60}; do
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        echo -e "${GREEN}✅ Frontend listo!${NC}"
+        break
     fi
-    
-    if [ "$1" = "docker" ]; then
-        check_dependencies
-        setup_backend
-        start_docker
-        echo ""
-        echo -e "${GREEN}✅ Backend corriendo en http://localhost:8000${NC}"
-        exit 0
+    sleep 1
+    if [ $i -eq 60 ]; then
+        echo -e "${RED}❌ Timeout esperando frontend${NC}"
+        echo "Revisa el log: /tmp/frontend.log"
+        exit 1
     fi
-    
-    if [ "$1" = "stop" ]; then
-        print_status "Deteniendo servicios..."
-        docker-compose down 2>/dev/null || true
-        pkill -f "next dev" 2>/dev/null || true
-        print_success "Servicios detenidos"
-        exit 0
-    fi
-    
-    # Menu interactivo
-    while true; do
-        show_menu
-        read -p "Selecciona una opción: " choice
-        
-        case $choice in
-            1)
-                check_dependencies
-                setup_backend
-                setup_frontend
-                start_docker
-                start_frontend
-                show_info
-                wait
-                ;;
-            2)
-                check_dependencies
-                setup_backend
-                start_docker
-                echo ""
-                echo -e "${GREEN}✅ Backend listo en http://localhost:8000${NC}"
-                ;;
-            3)
-                setup_frontend
-                cd frontend && npm run dev
-                ;;
-            4)
-                print_status "Deteniendo servicios..."
-                docker-compose down 2>/dev/null || true
-                pkill -f "next dev" 2>/dev/null || true
-                print_success "Servicios detenidos"
-                ;;
-            5)
-                docker-compose logs -f
-                ;;
-            q|Q)
-                echo "Saliendo..."
-                exit 0
-                ;;
-            *)
-                print_error "Opción inválida"
-                ;;
-        esac
-    done
-}
+done
 
-# Ejecutar
-main "$@"
+# ============================================
+# RESUMEN
+# ============================================
+echo ""
+echo "╔════════════════════════════════════════════════════════════╗"
+echo "║           🎉 EdTech Platform está corriendo!               ║"
+echo "╠════════════════════════════════════════════════════════════╣"
+echo "║                                                            ║"
+echo "║  🌐 Frontend:     http://localhost:3000                    ║"
+echo "║  🔧 Backend API:  http://localhost:8000                    ║"
+echo "║                                                            ║"
+echo "╠════════════════════════════════════════════════════════════╣"
+echo "║                     PANTALLAS DISPONIBLES                  ║"
+echo "╠════════════════════════════════════════════════════════════╣"
+echo "║                                                            ║"
+echo "║  👤 Usuarios:                                              ║"
+echo "║     • Login:      http://localhost:3000/login              ║"
+echo "║     • Registro:   http://localhost:3000/register           ║"
+echo "║                                                            ║"
+echo "║  👑 Admin:                                                 ║"
+echo "║     • Login:      http://localhost:3000/admin/login        ║"
+echo "║     • Email:      admin@edtech.com                         ║"
+echo "║     • Password:   admin123                                 ║"
+echo "║                                                            ║"
+echo "║  👨‍🏫 Instructor:                                            ║"
+echo "║     • Dashboard:  http://localhost:3000/instructor/dashboard║"
+echo "║     • Upload:     http://localhost:3000/instructor/upload  ║"
+echo "║                                                            ║"
+echo "╠════════════════════════════════════════════════════════════╣"
+echo "║  📊 Logs:                                                  ║"
+echo "║     • Backend:    tail -f /tmp/backend.log                 ║"
+echo "║     • Frontend:   tail -f /tmp/frontend.log                ║"
+echo "║                                                            ║"
+echo "║  🛑 Presiona Ctrl+C para detener los servidores            ║"
+echo "║                                                            ║"
+echo "╚════════════════════════════════════════════════════════════╝"
+echo ""
+
+# Abrir navegador (si es posible)
+if command_exists xdg-open; then
+    xdg-open http://localhost:3000 > /dev/null 2>&1 || true
+elif command_exists open; then
+    open http://localhost:3000 > /dev/null 2>&1 || true
+fi
+
+# Mantener script corriendo
+echo -e "${YELLOW}💡 Los servidores están corriendo en segundo plano${NC}"
+echo -e "${YELLOW}   Presiona Ctrl+C para detenerlos${NC}"
+echo ""
+
+wait
